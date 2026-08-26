@@ -2,8 +2,6 @@
  *
  *                     registers.h
  *
- *     Assignment: um
- *     Authors:    Mateusz (mzubrz01) & Niam(nlakha01)
  *     Date:       04/12/25
  *
  *
