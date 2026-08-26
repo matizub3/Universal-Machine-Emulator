@@ -1,3 +1,16 @@
+/**************************************************************
+ *
+ *                     main.c
+ *
+ *     Date:       4/12/25
+ *
+ *     Purpose:
+ *         Initiates the functionality of the universal machince
+ *         emulator, opens file provided on command line and
+ *         starts the execution loop.
+ *
+ **************************************************************/
+
 #include "um.h"
 
 #define UM_FILE_COMMANDLINE_INDEX 1
