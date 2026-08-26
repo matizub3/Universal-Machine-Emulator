@@ -2,8 +2,6 @@
 *
 *                     bitpack.c
 *
-*       Assignment: arith
-*       Authors:    Mateusz, Annica
 *       Date:       03/07/25
 *
 *       bitpack.c implements the Bitpack interface for packing and
