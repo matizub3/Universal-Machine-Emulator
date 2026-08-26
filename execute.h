@@ -2,8 +2,6 @@
  *
  *                     execute.h
  *
- *     Assignment: um
- *     Authors:    Mateusz (mzubrz01) & Niam(nlakha01)
  *     Date:       4/12/25
  *
  *     Purpose:
