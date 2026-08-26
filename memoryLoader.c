@@ -2,8 +2,6 @@
  *
  *                     MEMORYLOADER.C
  *
- *     Assignment: um
- *     Authors:    Mateusz (mzubrz01) & Niam(nlakha01)
  *     Date:       04/08/25
  *
  *     Purpose:
