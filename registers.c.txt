@@ -1,0 +1,144 @@
+/**************************************************************
+ *
+ *                     registers.C
+ *
+ *     Assignment: um
+ *     Authors:    Mateusz (mzubrz01) & Niam(nlakha01)
+ *     Date:       04/12/25
+ *
+ *         Implements the register module for the Universal Machine.
+ *         Provides functions to create, access, update, and free
+ *         a set of eight 32-bit registers.
+ *
+ *
+ **************************************************************/
+
+
+#include "registers.h"
+
+struct Registers {
+    int num;
+    uint32_t *data;
+};
+
+/********** registers_create **********
+ *
+ * Allocates and initializes a new set of registers
+ *
+ * Parameters:
+ *      int numRegisters
+ *          The number of registers to allocate
+ *
+ * Return:
+ *      Registers*
+ *          A pointer to the newly allocated Registers struct
+ *
+ * Expects:
+ *        numRegisters is greater than 0
+ *        CRE if numRegisters is less than or equal to 0
+ *
+ ************************/
+Registers registers_create(int numRegisters)
+{
+        assert(numRegisters > 0);
+
+        /* Allocate space of new registers struct */
+        Registers registers = ALLOC(sizeof(*registers));
+
+        registers->num = numRegisters;
+        registers->data = ALLOC(sizeof(uint32_t) * numRegisters);
+
+        /* Initialize all registers to 0 */
+        for (int index = 0; index < numRegisters; index++) {
+                registers->data[index] = 0;
+        }
+
+        return registers;
+}
+
+/********** registers_set **********
+ *
+ * Sets the value of a given register
+ *
+ * Parameters:
+ *      Registers *regs
+ *          Pointer to the Registers structure
+ *      int regIndex
+ *          The index of the register to update
+ *      uint32_t value
+ *          The value to set in the register
+ *
+ * Return:
+ *      None
+ *
+ * Expects:
+ *      regs is not NULL
+ *      regIndex is within the valid range
+ *
+ ************************/
+void registers_set(Registers registers, int regIndex, uint32_t value)
+{
+        /* Assert that index provided is valid */
+        assert(registers != NULL);
+        assert(regIndex >= 0 && regIndex < registers->num);
+
+        /* Assert value can fit in a uint32_t */
+        assert(value <= UINT32_MAX);
+
+        /* Set register at provided index to provided value */
+        registers->data[regIndex] = value;
+
+}
+
+/********** registers_get **********
+ *
+ * Gets the value of the given register
+ *
+ * Parameters:
+ *      Registers *regs
+ *          Pointer to the Registers structure
+ *      int regIndex
+ *          The index of the register to retrieve
+ *
+ * Return:
+ *      uint32_t
+ *          The value stored in the specified register
+ *
+ * Expects:
+ *      regs is not NULL
+ *      regIndex is within the valid range
+ ************************/
+uint32_t registers_get(Registers registers, int regIndex)
+{
+        /* Assert provided registers struct and index is valid */
+        assert(registers != NULL);
+        assert(regIndex >= 0 && regIndex < registers->num);
+
+        /* Return value in the register at the provided index */
+        return registers->data[regIndex];
+}
+
+/********** registers_free **********
+ *
+ * Frees the memory allocated for the Registers struct
+ *
+ * Parameters:
+ *      Registers *regs
+ *          Pointer to the Registers struct to free
+ *
+ * Return:
+ *      None
+ *
+ * Expects:
+ *      - regs is not NULL
+ *
+ ************************/
+void registers_free(Registers registers)
+{
+        assert(registers != NULL);
+        assert(registers->data != NULL);
+
+        /* Free registers memory usage */
+        free(registers->data);
+        free(registers);
+}

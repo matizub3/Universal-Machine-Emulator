@@ -1,0 +1,72 @@
+/**************************************************************
+ *
+ *                     decode.c
+ *
+ *     Assignment: um
+ *     Authors:    Mateusz (mzubrz01) & Niam(nlakha01)
+ *     Date:       04/12/25
+ *
+ *     Purpose:
+ *         The interface for decoding 32-bit UM instructions into their 
+ *         components (opcode, registers, and value).
+ *
+ **************************************************************/
+#include "decode.h"
+#include <bitpack.h>
+#include <assert.h>
+
+#define OP_WIDTH 4
+#define REG_WIDTH 3
+#define REG_A_LSB 6
+#define REG_B_LSB 3
+#define REG_C_LSB 0
+#define PROGRAM_SEGMENT_ID 0
+
+
+/********** decode_instruction **********
+ *
+ * Decodes a 32-bit UM instruction located at the given program counter
+ * in segment 0 of memory and returns a structured Um_Instruction
+ *
+ * Parameters:
+ *      MachineState ms
+ *          The current machine state which memory and registers
+ *
+ *      int programCounter
+ *          The index of the instruction to decode from segment 0
+ *
+ * Return:
+ *      Um_Instruction
+ *          A struct that contains the decoded instruction, including opcode,
+ *          registers and value if it's a load value instruction
+ *
+ * Expects:
+ *      - ms is non-NULL and contains valid memory segments
+ *      - programCounter is within the bounds of segment 0
+ *
+ * Notes:
+ *      - For opcode 13 load value instruction, regB and regC are unused.
+ *      - The instruction is read from segment 0 of memory
+ ************************/
+Um_Instruction decode_instruction(MachineState ms, int programCounter)
+{
+
+        /* Retrieve the instruction from segment 0 at programCounter index */
+        uint32_t instruct = getWord(ms.mem, PROGRAM_SEGMENT_ID, programCounter);
+
+        /* Decode instruction components using Bitpack */
+
+        Um_Instruction um_instruct;
+        um_instruct.opcode = (int)Bitpack_getu(instruct, OP_WIDTH, 28);
+
+        if (um_instruct.opcode == 13) {
+                um_instruct.regA = Bitpack_getu(instruct, REG_WIDTH, 25);
+                um_instruct.value = Bitpack_getu(instruct, 25, 0);
+        } else {
+                um_instruct.regA = Bitpack_getu(instruct, REG_WIDTH, REG_A_LSB);
+                um_instruct.regB = Bitpack_getu(instruct, REG_WIDTH, REG_B_LSB);
+                um_instruct.regC = Bitpack_getu(instruct, REG_WIDTH, REG_C_LSB);
+        }
+
+        return um_instruct;
+}

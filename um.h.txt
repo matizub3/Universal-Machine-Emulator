@@ -1,0 +1,38 @@
+/**************************************************************
+ *
+ *                        um.h
+ *
+ *     Assignment: um
+ *     Authors:    Mateusz (mzubrz01) & Niam(nlakha01)
+ *     Date:       04/12/25
+ *
+ *     Purpose:
+ *         Provides the definitions and declarations for the main
+ *         Universal Machine execution setup, including initialization,
+ *         instruction decoding, and I/O functionality.
+ *
+ **************************************************************/
+#ifndef UM_H
+#define UM_H
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#include "registers.h"
+#include "memoryLoader.h"
+#include "bitpack.h"
+
+typedef struct MachineState MachineState;
+typedef struct Um_Instruction Um_Instruction;
+
+/* Machine initialization and I/O*/
+MachineState intialize_machine_state(FILE *input);
+void IO_print(uint32_t value);
+uint32_t IO_input();
+void freeMachineState(MachineState ms);
+
+Um_Instruction decode_instruct(MachineState ms, int programCounter);
+
+#endif

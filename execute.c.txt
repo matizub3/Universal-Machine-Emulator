@@ -1,0 +1,570 @@
+/**************************************************************
+ *
+ *                     execute.c
+ *
+ *     Assignment: um
+ *     Authors:    Mateusz (mzubrz01) & Niam(nlakha01)
+ *     Date:       12/08/25
+ *
+ *     Purpose:
+ *         The implementation of the main execution loop and all functions 
+ *         required to execute UM instructions on a MachineState. Implements
+ *         all 14 Universal Machine instructions,
+ *
+ **************************************************************/
+#include "execute.h"
+
+/********** MachineState **********
+ *
+ * Represents the structure of a Universal Machine
+ *
+ *
+ * Registers regs:   Registers struct to hold register values of UM
+ * MemoryLoader mem: MemoryLoader struct to hold memory of UM
+ * programCounter:   Stores the index of the current program being executed
+ * numOfPrograms:    Stores the number of programs 
+ *
+ */
+struct MachineState {
+    Registers regs;
+    MemoryLoader mem;
+    uint32_t programCounter;
+    uint32_t numOfPrograms;
+};
+
+
+/********** Um_Instruction **********
+ *
+ * Represents a single Universal Machine instruction.
+ *
+ * opcode:  The operation code of the instruction (0-13)
+ * regA:    Holds value for register A
+ * regB:    Holds value for register B
+ * regC:    Holds value for register C 
+ * value:   Holds value for instruction load value
+ *
+ */
+struct Um_Instruction{
+        int opcode;
+        uint32_t regA;
+        uint32_t regB;
+        uint32_t regC;
+        uint32_t value;
+};
+
+
+/********** run_um **********
+ *
+ * Executes the Universal Machine instruction loop.
+ *
+ * Parameters:
+ *      MachineState *ms: Pointer to the initialized machine state.
+ *
+ * Return:
+ *      None
+ *
+ * Expects:
+ *      - ms is not NULL  and it contains initialized memory and registers.
+ *      - Segment 0 contains a valid set of instructions.
+ ************************/
+void run_um(MachineState *ms)
+{
+    
+    assert(ms->regs != NULL);
+
+    bool halt_called = false;
+
+    while (!halt_called) {
+
+                assert(ms->programCounter != ms->numOfPrograms);
+                
+                Um_Instruction instr = decode_instruct(*ms, ms->programCounter);
+
+                /* Conditional Move */
+                if (instr.opcode == 0) {
+                        conditional_move(ms, instr.regA, instr.regB, 
+                                        instr.regC);
+                        ms->programCounter++;
+                } 
+                
+                /* Segmented Load */
+                else if (instr.opcode == 1) {
+                        segmented_load(ms, instr.regA, instr.regB, instr.regC);
+                        ms->programCounter++;
+                } 
+                
+                /* Segmented Store */
+                else if (instr.opcode == 2) {
+                        segmented_store(ms, instr.regA, instr.regB, instr.regC);
+                        ms->programCounter++;
+                } 
+                
+                /* Addition */
+                else if (instr.opcode == 3) {
+                        addition(ms, instr.regA, instr.regB, instr.regC);
+                        ms->programCounter++;
+                } 
+                
+                /* Multiplication */
+                else if (instr.opcode == 4) {
+                        multiplication(ms, instr.regA, instr.regB, instr.regC);
+                        ms->programCounter++;
+                } 
+                
+                /* Division */
+                else if (instr.opcode == 5) {
+                        division(ms, instr.regA, instr.regB, instr.regC);
+                        ms->programCounter++;
+                } 
+                
+                /* NAND */
+                else if (instr.opcode == 6) {
+                        nand(ms, instr.regA, instr.regB, instr.regC);
+                        ms->programCounter++;
+                }
+                
+                /* Halt */
+                else if (instr.opcode == 7) {
+                        halt_called = true;
+                } 
+                
+                /* Map Segment */
+                else if (instr.opcode == 8) {
+                        map_segment(ms, instr.regB, instr.regC);
+                        ms->programCounter++;
+                } 
+
+                /* Unmap Segment */
+                else if (instr.opcode == 9) {
+                        unmap_segment(ms, instr.regC);
+                        ms->programCounter++;
+                }
+                
+                /* Output */
+                else if (instr.opcode == 10) {
+                        output(ms, instr.regC);
+                        ms->programCounter++;
+                }
+                
+                /* Input */
+                else if (instr.opcode == 11) {
+                        input(ms, instr.regC);
+                        ms->programCounter++;
+                }
+                
+                /* Load Program */
+                else if (instr.opcode == 12) {
+                        load_program(ms, instr.regB, instr.regC);
+                }
+                
+                /* Load Value */
+                else if (instr.opcode == 13) {
+                        load_value(ms, instr.regA, instr.value);
+                        ms->programCounter++;
+                }
+                
+                else {
+                        fprintf(stderr, "Unknown opcode %u\n", instr.opcode);
+                        exit(EXIT_FAILURE);
+                }                
+
+        }
+}
+
+/********** conditional_move **********
+ *
+ * Implements UM instruction 0: Conditional Move.
+ * If the value in register C is non-zero, sets register A to the value in B.
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *          Pointer to the current machine state.
+ *
+ *      uint32_t a, b, c:
+ *          Register used for the operation.
+ *
+ * Return:
+ *      None.
+ *
+ * Expects:
+ *      - ms is not NULL.
+ *      - All register indices are between 0–7.
+ ************************/
+void conditional_move(MachineState *ms, uint32_t a, uint32_t b, uint32_t c) 
+{
+        
+        
+        uint32_t regB = registers_get(ms->regs, b);
+        uint32_t regC = registers_get(ms->regs, c);
+        
+        if (regC != 0) {
+                registers_set(ms->regs, a, regB);
+        }
+        
+}
+
+
+/********** segmented_load **********
+ *
+ * Implements UM instruction 1: Segmented Load.
+ * Loads a word from memory[regB][regC] into register A.
+ *
+ * Parameters:
+ *      MachineState *ms;
+ *              Pointer to the current machine state.
+ *      uint32_t a, b, c:
+ *              Registers used for the operation.
+ *
+ * Return:
+ *      None.
+ *
+ * Expects:
+ *      - The segment referenced by register B is mapped.
+ *      - Offset in register C is within valid bounds.
+ ************************/
+void segmented_load(MachineState *ms, uint32_t a, uint32_t b, uint32_t c) {
+      
+        uint32_t regB = registers_get(ms->regs, b);
+        uint32_t regC = registers_get(ms->regs, c);
+    
+        uint32_t *command = getWord(ms->mem, regB, regC);
+    
+        registers_set(ms->regs, a, *command);
+}
+
+
+/********** segmented_store **********
+ *
+ * Implements UM instruction 2: Segmented Store.
+ * Stores the value in register C into memory[regA][regB].
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *              Pointer to the current machine state.
+ *      uint32_t a, b, c:
+ *              Registers used for the operation.
+ *
+ * Return:
+ *      None.
+ *
+ * Expects:
+ *      - The segment referenced by register A is mapped.
+ *      - Offset in register B is within bounds.
+ ************************/
+void segmented_store(MachineState *ms, uint32_t a, uint32_t b, uint32_t c) 
+{
+        
+        /* Get the values of corresponding registers */
+        uint32_t regA = registers_get(ms->regs, a);
+        uint32_t regB = registers_get(ms->regs, b);
+        uint32_t regC = registers_get(ms->regs, c);
+    
+        store(ms->mem, regA, regB, regC);
+}
+
+
+/********** addition **********
+ *
+ * Implements UM instruction 3: Addition.
+ * Sets register A to (regB + regC).
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *              Pointer to the current machine state.
+ *      uint32_t a, b, c:
+ *              Registers used for the operation.
+ *
+ * Return:
+ *      None.
+ ************************/
+void addition(MachineState *ms, uint32_t a, uint32_t b, uint32_t c)
+{
+        /* Get the values of corresponding registers */
+        uint32_t regB = registers_get(ms->regs, b);
+        uint32_t regC = registers_get(ms->regs, c);
+
+        uint32_t sum = regB + regC;
+    
+        registers_set(ms->regs, a, sum);
+}
+
+
+/********** multiplication **********
+ *
+ * Implements UM instruction 4: Multiplication.
+ * Sets register A to (regB * regC).
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *                Pointer to the current machine state.
+ *      uint32_t a, b, c:
+ *              Registers used for the operation.
+ *
+ * Return:
+ *      None.
+ ************************/
+void multiplication(MachineState *ms, uint32_t a, uint32_t b, uint32_t c)
+{
+        /* Get the values of corresponding registers */
+        uint32_t regB = registers_get(ms->regs, b);
+        uint32_t regC = registers_get(ms->regs, c);
+
+        uint32_t product = regB * regC;
+
+        registers_set(ms->regs, a, product);
+}
+
+
+/********** division **********
+ *
+ * Implements UM instruction 5: Division.
+ * Sets register A to (regB / regC).
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *              Pointer to the current machine state.
+ *      uint32_t a, b, c:
+ *              Registers used for the operation.
+ *
+ * Return:
+ *      None.
+ *
+ * Expects:
+ *      - register C must not be 0.
+ ************************/
+void division(MachineState *ms, uint32_t a, uint32_t b, uint32_t c)
+{
+        /* Get the values of corresponding registers */
+        uint32_t regB = registers_get(ms->regs, b);
+        uint32_t divisor = registers_get(ms->regs, c);
+
+        assert(divisor != 0);
+
+        uint32_t result = regB / divisor;
+        registers_set(ms->regs, a, result);
+
+}
+
+
+/********** nand **********
+ *
+ * Implements UM instruction 6: Bitwise NAND.
+ * Sets register A to ~(regB & regC).
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *              Pointer to the current machine state.
+ *      uint32_t a, b, c:
+ *              Registers used for the operation.
+ *
+ * Return:
+ *      None.
+ ************************/
+void nand(MachineState *ms, uint32_t a, uint32_t b, uint32_t c)
+{
+
+        /* Get the values of corresponding registers */
+        uint32_t regB = registers_get(ms->regs, b);
+        uint32_t regC = registers_get(ms->regs, c);
+
+        uint32_t result = ~(regB & regC);
+
+        registers_set(ms->regs, a, result);
+
+}
+
+
+/********** map_segment **********
+ *
+ * Implements UM instruction 8: Map Segment.
+ * Allocates a new memory segment of size = register C and
+ * stores the segment ID into register B.
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *        Pointer to the current machine state.
+ *      uint32_t b, c:
+ *              Registers used for the operation.
+ *
+ * Return:
+ *      None.
+ *
+ * Expects:
+ *      - register C contains a non negative segment size.
+ ************************/
+void map_segment(MachineState *ms, uint32_t b, uint32_t c)
+{
+        /* Get the values of corresponding registers */
+        uint32_t size = registers_get(ms->regs, c);
+        
+        uint32_t segID = mapSegment(ms->mem, size);  
+        
+        registers_set(ms->regs, b, segID);
+
+}
+
+
+/********** unmap_segment **********
+ *
+ * Implements UM instruction 9: Unmap Segment.
+ * Frees the segment given by register C.
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *              Pointer to the current machine state.
+ *      uint32_t c:
+ *             Register used for the operation.
+ *
+ * Return:
+ *      None.
+ *
+ * Expects:
+ *      - Segment ID in register C is a currently mapped segment.
+ *      - Segment 0 should not be unmapped.
+ ************************/
+void unmap_segment(MachineState *ms, uint32_t c)
+{
+
+        /* Get the values of corresponding registers */
+        uint32_t regC = registers_get(ms->regs, c);
+        unmapSegment(ms->mem, regC);
+
+}
+
+
+/********** output **********
+ *
+ * Implements UM instruction 10: Output.
+ * Writes the ASCII character in register C to stdout.
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *              Pointer to the current machine state.
+ *      uint32_t c:
+ *              Register used for the operation.
+ *
+ * Return:
+ *      None.
+ *
+ * Expects:
+ *      - Value in register C is =< 255.
+ ************************/
+void output(MachineState *ms, uint32_t c)
+{
+        IO_print(registers_get(ms->regs, c));
+}
+
+
+/********** input **********
+ *
+ * Implements UM instruction 11: Input.
+ * Reads a character from stdin and stores it in register C.
+ * If EOF is reached it stores 0xFFFFFFFF instead.
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *              Pointer to the current machine state.
+ *      uint32_t c:
+ *              Register used for the operation.
+ *
+ * Return:
+ *      None.
+ ************************/
+void input(MachineState *ms, uint32_t c)
+{
+        uint32_t input = IO_input();
+        registers_set(ms->regs, c, input);
+}
+
+
+/********** load_program **********
+ *
+ * Implements UM instruction 12: Load Program.
+ * If register B != 0, makes a deep copy of the segment given by register B
+ * and replaces segment 0. Then sets the program counter to the value in 
+ * register C.
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *              Pointer to the current machine state.
+ *      uint32_t b, c:
+ *              Registers used for the operation.
+ *
+ * Return:
+ *      None.
+ *
+ * Expects:
+ *      - Segment ID in register B is a mapped segment.
+ *      - register C contains a valid offset.
+ ************************/
+void load_program(MachineState *ms, uint32_t b, uint32_t c)
+{
+        uint32_t regB = registers_get(ms->regs, b);
+        
+        if (regB != 0) {
+
+                Seq_T segments = ms->mem->segments;
+
+                /* Get source segment and its length */
+                Segment *old_segment = (Segment*)Seq_get(segments, regB);
+                int segmentLength = getSegmentLength(ms->mem, regB);
+
+
+                /* Allocate and deep copy the segment */
+                Seq_T new_segment = Seq_new(segmentLength);
+
+                for (int index = 0; index < segmentLength; index++) {
+
+                uint32_t *word = (uint32_t *)Seq_get(old_segment->words, 
+                                                             index);
+
+                        uint32_t *new_word = ALLOC(sizeof(*new_word));
+                        *new_word = *word;
+
+                        Seq_addhi(new_segment, new_word);
+                }
+
+        Segment *segment_zero = (Segment*)Seq_get(ms->mem->segments, 0);
+
+                /* Unmap and replace segment 0 */
+                for (int index = 0; index < Seq_length(segment_zero->words); 
+                                                                 index++) {
+                        uint32_t *value = (uint32_t *)Seq_get(
+                                                segment_zero->words, index);
+
+                        FREE(value);
+                }
+
+                Seq_free(&(segment_zero->words));
+                segment_zero->words = new_segment;
+                segment_zero->size = Seq_length(new_segment);
+                ms->numOfPrograms = segment_zero->size;
+
+                Seq_put(ms->mem->segments, 0, segment_zero);
+                
+        }
+
+        /*Jump to the new program counter*/
+        ms->programCounter = registers_get(ms->regs, c);
+}
+
+/********** load_value **********
+ *
+ * Implements UM instruction 13: Load Value.
+ * Loads a 25-bit value into register A.
+ *
+ * Parameters:
+ *      MachineState *ms:
+ *              Pointer to the current machine state.
+ *      uint32_t a, value:
+ *              Registers used for the operation.
+ *
+ * Return:
+ *      None.
+ ************************/
+void load_value(MachineState *ms, uint32_t a, uint32_t value)
+{
+
+        registers_set(ms->regs, a, value);
+}
+

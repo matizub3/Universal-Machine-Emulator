@@ -1,0 +1,76 @@
+/**************************************************************
+ *
+ *                     memoryLoader.h
+ *
+ *     Assignment: um
+ *     Authors:    Mateusz (mzubrz01) & Niam(nlakha01)
+ *     Date:       04/12/25
+ *
+ *     Purpose:
+ *          The interface that handles segmented memory functionality for the 
+ *          Universal Machine.Functions include  mapping, unmapping, storing to,
+ *          and accessing segments. Manages the recycling of segment IDs.
+ *
+ **************************************************************/
+#ifndef MEMORY_LOADER_H
+#define MEMORY_LOADER_H
+
+#include <stdint.h>
+#include <stdlib.h>
+#include "seq.h"
+#include "stack.h"
+#include "mem.h"
+#include <assert.h>
+#include <stdio.h>
+
+typedef struct MemoryLoader *MemoryLoader;
+typedef struct Segment Segment;
+
+/* Struct definitions for public interface */
+
+/********** struct MemoryLoader **********
+ *
+ * Represents the entire segmented memory system of the Universal Machine.
+ *
+ *  Segments: A sequence of all memory segments.
+ *  unmapped_ids: A stack of previously unmapped segment IDs that can be reused
+ *  when mapping new segments.
+ * 
+ ***************************************/
+
+struct MemoryLoader {
+    Seq_T segments;        
+    Stack_T unmapped_ids;    
+};
+
+
+/********** struct Segment **********
+ *
+ * Represents a single memory segment.
+ *
+ *    words: A sequence  of dynamically allocated 32-bit wordsstored in this
+ *    segment.
+ *
+ *   size: The number of words currently in this segment.
+ ***********************************/
+struct Segment {
+        Seq_T words;
+        uint32_t size;
+};
+
+/* Create and destroy the memory loader */
+MemoryLoader newMemory(size_t num_of_segments, size_t segmentSize);
+void freeMemory(MemoryLoader ml);
+
+/* Map and unmap memory segments */
+uint32_t mapSegment(MemoryLoader ml, uint32_t size);
+void add(MemoryLoader ml, int segmentId, uint32_t value);
+void unmapSegment(MemoryLoader ml, int segmentId);
+
+/* Access and modify values within a segment */
+void store(MemoryLoader ml, int segmentId, uint32_t offset, uint32_t value);
+uint32_t *getWord(MemoryLoader ml, int segmentId, uint32_t offset);
+uint32_t getSegmentLength(MemoryLoader ml, int segmentId);
+
+
+#endif

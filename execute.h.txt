@@ -1,0 +1,43 @@
+/**************************************************************
+ *
+ *                     execute.h
+ *
+ *     Assignment: um
+ *     Authors:    Mateusz (mzubrz01) & Niam(nlakha01)
+ *     Date:       4/12/25
+ *
+ *     Purpose:
+ *         Defines the core execution loop and all functions required
+ *         to execute UM instructions on a MachineState. Implements
+ *         all 14 Universal Machine instructions according to spec.
+ *
+ **************************************************************/
+
+#ifndef EXECUTE_H
+#define EXECUTE_H
+
+#include "um.h"
+#include "registers.h"
+#include "memoryLoader.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <stdbool.h>
+
+void run_um(MachineState *ms);
+void conditional_move(MachineState *ms, uint32_t a, uint32_t b, uint32_t c);
+void segmented_load(MachineState *ms, uint32_t a, uint32_t b, uint32_t c);
+void segmented_store(MachineState *ms, uint32_t a, uint32_t b, uint32_t c);
+void addition(MachineState *ms, uint32_t a, uint32_t b, uint32_t c);
+void multiplication(MachineState *ms, uint32_t a, uint32_t b, uint32_t c);
+void division(MachineState *ms, uint32_t a, uint32_t b, uint32_t c);
+void nand(MachineState *ms, uint32_t a, uint32_t b, uint32_t c);
+void map_segment(MachineState *ms, uint32_t b, uint32_t c);
+void unmap_segment(MachineState *ms, uint32_t c);
+void output(MachineState *ms, uint32_t c);
+void input(MachineState *ms, uint32_t c);
+void load_program(MachineState *ms, uint32_t b, uint32_t c);
+void load_value(MachineState *ms, uint32_t a, uint32_t value);
+
+#endif
